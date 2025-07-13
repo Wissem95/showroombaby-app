@@ -216,7 +216,7 @@ class MessageController extends Controller
             });
 
         $messages = $query->with(['sender', 'product', 'product.seller', 'product.images'])
-            ->orderBy('created_at', 'desc')
+            ->orderBy('created_at', 'asc')
             ->paginate($limit, ['*'], 'page', $page);
 
         // Marquer comme lus SEULEMENT les messages de cette conversation spécifique

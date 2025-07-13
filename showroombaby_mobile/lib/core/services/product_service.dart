@@ -160,4 +160,17 @@ class ProductService {
         .map((json) => Product.fromJson(json))
         .toList();
   }
+
+  /// Récupère les produits d'un utilisateur spécifique
+  Future<List<Product>> getUserProductsById(int userId) async {
+    final response = await _dio.get(
+      '/users/$userId/products',
+      options: Options(
+        headers: await _getHeaders(),
+      ),
+    );
+    return (response.data['data'] as List)
+        .map((json) => Product.fromJson(json))
+        .toList();
+  }
 } 

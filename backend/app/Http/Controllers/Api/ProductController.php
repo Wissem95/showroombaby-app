@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Api\CategoryController;
+use App\Models\User;
 
 class ProductController extends Controller
 {
@@ -244,7 +245,7 @@ class ProductController extends Controller
      */
     public function show($id)
     {
-        $product = Product::with(['category', 'subcategory'])->find($id);
+        $product = Product::with(['category', 'subcategory', 'seller'])->find($id);
 
         if (!$product) {
             return response()->json([
@@ -312,6 +313,18 @@ class ProductController extends Controller
             'is_trending' => $product->is_trending,
             'is_featured' => $product->is_featured,
             'user_id' => $product->user_id,
+            'seller' => $product->seller ? [
+                'id' => $product->seller->id,
+                'name' => $product->seller->name,
+                'firstName' => $product->seller->firstName,
+                'lastName' => $product->seller->lastName,
+                'username' => $product->seller->username,
+                'email' => $product->seller->email,
+                'avatar' => $product->seller->avatar,
+                'phone' => $product->seller->phone,
+                'city' => $product->seller->city,
+                'rating' => $product->seller->rating,
+            ] : null,
             'size' => $product->size,
             'color' => $product->color,
             'warranty' => $product->warranty,
@@ -452,7 +465,7 @@ class ProductController extends Controller
     {
         $limit = $request->limit ?? 10;
 
-        $products = Product::with(['category', 'images'])
+        $products = Product::with(['category', 'images', 'seller'])
             ->where('status', 'PUBLISHED')
             ->orderBy('view_count', 'desc')
             ->take($limit)
@@ -479,7 +492,7 @@ class ProductController extends Controller
     {
         $product = Product::findOrFail($id);
 
-        $similarProducts = Product::with(['category', 'images'])
+        $similarProducts = Product::with(['category', 'images', 'seller'])
             ->where('id', '!=', $id)
             ->where(function($query) use ($product) {
                 $query->where('category_id', $product->category_id)
@@ -510,7 +523,7 @@ class ProductController extends Controller
 
             $products = Product::where('user_id', $user->id)
                 ->orderBy('created_at', 'desc')
-                ->with(['images', 'category'])
+                ->with(['images', 'category', 'seller'])
                 ->get();
 
             return response()->json([
@@ -519,6 +532,64 @@ class ProductController extends Controller
             ]);
         } catch (\Exception $e) {
             Log::error('Erreur lors de la récupération des produits: ' . $e->getMessage());
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Erreur lors de la récupération des produits'
+            ], 500);
+        }
+    }
+
+    /**
+     * Récupère tous les produits d'un utilisateur spécifique
+     *
+     * @param int $userId
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getUserProductsById($userId)
+    {
+        try {
+            // Vérifier que l'utilisateur existe
+            $user = User::find($userId);
+            if (!$user) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'Utilisateur non trouvé'
+                ], 404);
+            }
+
+            // Récupérer les produits publiés de cet utilisateur
+            $products = Product::where('user_id', $userId)
+                ->where('status', 'PUBLISHED')
+                ->orderBy('created_at', 'desc')
+                ->with(['images', 'category', 'seller'])
+                ->get();
+
+            // Formatter les images pour chaque produit
+            $formattedProducts = [];
+            foreach ($products as $product) {
+                $productImages = ProductImage::where('product_id', $product->id)->get();
+
+                $formattedImages = [];
+                foreach ($productImages as $image) {
+                    $formattedImages[] = [
+                        'id' => $image->id,
+                        'path' => $image->path,
+                        'url' => asset('storage/' . $image->path),
+                        'is_primary' => $image->is_primary,
+                        'order' => $image->order
+                    ];
+                }
+
+                $product->images = $formattedImages;
+                $formattedProducts[] = $product;
+            }
+
+            return response()->json([
+                'status' => 'success',
+                'data' => $formattedProducts
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Erreur lors de la récupération des produits utilisateur: ' . $e->getMessage());
             return response()->json([
                 'status' => 'error',
                 'message' => 'Erreur lors de la récupération des produits'

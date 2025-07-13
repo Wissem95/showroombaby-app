@@ -63,6 +63,13 @@ Future<List<Product>> userProducts(UserProductsRef ref) async {
   return await service.getUserProducts();
 }
 
+/// Provider pour récupérer les produits d'un utilisateur spécifique
+@riverpod
+Future<List<Product>> userProductsById(UserProductsByIdRef ref, int userId) async {
+  final service = ref.read(productServiceProvider);
+  return await service.getUserProductsById(userId);
+}
+
 @riverpod
 Future<List<Product>> categoryProducts(CategoryProductsRef ref, int categoryId) async {
   final service = ref.read(productServiceProvider);
