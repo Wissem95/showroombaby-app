@@ -16,7 +16,7 @@ import '../../../core/models/product.dart' show ProductCondition;
 class HomeScreen extends ConsumerStatefulWidget {
   final String? initialSearchQuery;
   final int? initialCategoryId;
-  
+
   const HomeScreen({
     super.key,
     this.initialSearchQuery,
@@ -36,11 +36,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   void initState() {
     super.initState();
     _searchController = TextEditingController();
-    
+
     // Initialiser avec les paramètres passés
     selectedCategoryId = widget.initialCategoryId;
     currentSearchQuery = widget.initialSearchQuery;
-    
+
     if (widget.initialSearchQuery != null) {
       _searchController.text = widget.initialSearchQuery!;
     }
@@ -56,10 +56,11 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget build(BuildContext context) {
     // Détermine quel provider utiliser selon l'état actuel
     final AsyncValue<List<Product>> productsAsync;
-    
+
     if (currentSearchQuery != null && currentSearchQuery!.isNotEmpty) {
       // Si on a un terme de recherche, utiliser le provider de recherche
-      productsAsync = ref.watch(searchProductsListProvider(currentSearchQuery!));
+      productsAsync =
+          ref.watch(searchProductsListProvider(currentSearchQuery!));
     } else if (selectedCategoryId != null) {
       // Sinon si une catégorie est sélectionnée, utiliser le provider de catégorie
       productsAsync = ref.watch(categoryProductsProvider(selectedCategoryId!));
@@ -85,25 +86,26 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         ),
         child: SafeArea(
-                      child: RefreshIndicator(
-              onRefresh: () async {
-                if (currentSearchQuery != null && currentSearchQuery!.isNotEmpty) {
-                  ref.invalidate(searchProductsListProvider(currentSearchQuery!));
-                } else if (selectedCategoryId != null) {
-                  ref.invalidate(categoryProductsProvider(selectedCategoryId!));
-                } else {
-                  ref.invalidate(trendingProductsProvider);
-                }
-              },
+          child: RefreshIndicator(
+            onRefresh: () async {
+              if (currentSearchQuery != null &&
+                  currentSearchQuery!.isNotEmpty) {
+                ref.invalidate(searchProductsListProvider(currentSearchQuery!));
+              } else if (selectedCategoryId != null) {
+                ref.invalidate(categoryProductsProvider(selectedCategoryId!));
+              } else {
+                ref.invalidate(trendingProductsProvider);
+              }
+            },
             child: SingleChildScrollView(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const SizedBox(height: 20),
-                  
+
                   // Barre de recherche en haut comme dans la première image
                   _buildTopSearchBar(context),
-                  
+
                   const SizedBox(height: 40),
 
                   // Section tendances comme dans la première image
@@ -147,16 +149,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               child: TextField(
                 controller: _searchController,
                 decoration: InputDecoration(
-                  hintText: currentSearchQuery != null && currentSearchQuery!.isNotEmpty 
+                  hintText: currentSearchQuery != null &&
+                          currentSearchQuery!.isNotEmpty
                       ? 'Recherche: $currentSearchQuery'
                       : 'Rechercher un produit...',
                   hintStyle: TextStyle(
-                    color: currentSearchQuery != null && currentSearchQuery!.isNotEmpty 
-                        ? AppColors.primary 
+                    color: currentSearchQuery != null &&
+                            currentSearchQuery!.isNotEmpty
+                        ? AppColors.primary
                         : Colors.grey,
                     fontSize: 16,
-                    fontWeight: currentSearchQuery != null && currentSearchQuery!.isNotEmpty 
-                        ? FontWeight.w600 
+                    fontWeight: currentSearchQuery != null &&
+                            currentSearchQuery!.isNotEmpty
+                        ? FontWeight.w600
                         : FontWeight.normal,
                   ),
                   prefixIcon: const Icon(
@@ -164,14 +169,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     color: Colors.grey,
                     size: 24,
                   ),
-                  suffixIcon: currentSearchQuery != null && currentSearchQuery!.isNotEmpty
+                  suffixIcon: currentSearchQuery != null &&
+                          currentSearchQuery!.isNotEmpty
                       ? IconButton(
                           icon: const Icon(Icons.clear, color: Colors.grey),
                           onPressed: _clearSearch,
                         )
                       : null,
                   border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
                 ),
                 onSubmitted: _performSearch,
                 onChanged: (value) {
@@ -185,36 +192,138 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
           ),
           const SizedBox(width: 12),
-          Container(
-            height: 50,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            decoration: BoxDecoration(
-              // Plus transparent avec effet fondu
-              color: Colors.white.withOpacity(0.6),
-              borderRadius: BorderRadius.circular(30), // Plus arrondi
-              border: Border.all(
-                color: Colors.white.withOpacity(0.3),
-                width: 1.5,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 15,
-                  offset: const Offset(0, 3),
+          Consumer(
+            builder: (context, ref, child) {
+              final authState = ref.watch(authNotifierProvider);
+
+              return authState.when(
+                data: (user) {
+                  if (user != null) {
+                    // Utilisateur connecté - afficher le profil/avatar
+                    return Container(
+                      height: 50,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.6),
+                        borderRadius: BorderRadius.circular(30),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.3),
+                          width: 1.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 15,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: TextButton(
+                        onPressed: () => context.push('/profile'),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            CircleAvatar(
+                              radius: 12,
+                              backgroundColor: AppColors.primary,
+                              child: Text(
+                                user.username.isNotEmpty
+                                    ? user.username[0].toUpperCase()
+                                    : 'U',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              user.username,
+                              style: const TextStyle(
+                                color: AppColors.textPrimary,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  } else {
+                    // Utilisateur non connecté - afficher le bouton S'identifier
+                    return Container(
+                      height: 50,
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.6),
+                        borderRadius: BorderRadius.circular(30),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.3),
+                          width: 1.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 15,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: TextButton(
+                        onPressed: () => context.push('/login'),
+                        child: const Text(
+                          "S'identifier",
+                          style: TextStyle(
+                            color: AppColors.textPrimary,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    );
+                  }
+                },
+                loading: () => Container(
+                  height: 50,
+                  width: 50,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.6),
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  child: const Center(
+                    child: SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  ),
                 ),
-              ],
-            ),
-            child: TextButton(
-              onPressed: () => context.push('/login'),
-              child: const Text(
-                "S'identifier",
-                style: TextStyle(
-                  color: AppColors.textPrimary,
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
+                error: (error, stack) => Container(
+                  height: 50,
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.6),
+                    borderRadius: BorderRadius.circular(30),
+                    border: Border.all(
+                      color: Colors.white.withOpacity(0.3),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: TextButton(
+                    onPressed: () => context.push('/login'),
+                    child: const Text(
+                      "S'identifier",
+                      style: TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-            ),
+              );
+            },
           ),
         ],
       ),
@@ -234,7 +343,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           child: Text(
             currentSearchQuery != null && currentSearchQuery!.isNotEmpty
                 ? 'Résultats pour "${currentSearchQuery}"'
-                : selectedCategoryId == null 
+                : selectedCategoryId == null
                     ? 'Surfer sur les tendances !'
                     : 'Produits filtrés',
             style: const TextStyle(
@@ -245,10 +354,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           ),
         ),
         const SizedBox(height: 20),
-        
+
         // Pastilles de catégories
         _buildCategoryPills(context, ref),
-        
+
         const SizedBox(height: 24),
         productsAsync.when(
           data: (products) => _buildProductGrid(context, products, ref),
@@ -270,7 +379,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       _clearSearch();
       return;
     }
-    
+
     setState(() {
       currentSearchQuery = query.trim();
       selectedCategoryId = null; // Réinitialiser la catégorie sélectionnée
@@ -285,12 +394,13 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     });
   }
 
-  Widget _buildProductGrid(BuildContext context, List<Product> products, WidgetRef ref) {
+  Widget _buildProductGrid(
+      BuildContext context, List<Product> products, WidgetRef ref) {
     // Si aucun produit, afficher un message avec le background qui continue
     if (products.isEmpty) {
       return _buildEmptyState(context);
     }
-    
+
     return GridView.builder(
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
@@ -334,14 +444,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               color: Colors.white,
             ),
           ),
-          
+
           const SizedBox(height: 24),
-          
+
           // Titre principal
           Text(
             currentSearchQuery != null && currentSearchQuery!.isNotEmpty
                 ? 'Aucun résultat trouvé'
-                : selectedCategoryId == null 
+                : selectedCategoryId == null
                     ? 'Aucun produit tendance'
                     : 'Aucun produit trouvé',
             style: const TextStyle(
@@ -351,9 +461,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
             textAlign: TextAlign.center,
           ),
-          
+
           const SizedBox(height: 12),
-          
+
           // Message descriptif
           Text(
             currentSearchQuery != null && currentSearchQuery!.isNotEmpty
@@ -368,9 +478,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
             textAlign: TextAlign.center,
           ),
-          
+
           const SizedBox(height: 32),
-          
+
           // Bouton pour effacer la recherche ou revenir aux tendances
           if (currentSearchQuery != null && currentSearchQuery!.isNotEmpty)
             Container(
@@ -391,7 +501,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   borderRadius: BorderRadius.circular(25),
                   onTap: _clearSearch,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 32, vertical: 16),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: const [
@@ -438,7 +549,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     });
                   },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 32, vertical: 16),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: const [
@@ -467,9 +579,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  Widget _buildProductCard(BuildContext context, Product product, WidgetRef ref) {
+  Widget _buildProductCard(
+      BuildContext context, Product product, WidgetRef ref) {
     final displayPrice = product.price ?? 0.0; // Gérer le cas null
-    
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -494,7 +607,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               Stack(
                 children: [
                   ClipRRect(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
+                    borderRadius:
+                        const BorderRadius.vertical(top: Radius.circular(16)),
                     child: Container(
                       height: 120,
                       width: double.infinity,
@@ -528,8 +642,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     right: 8,
                     child: Consumer(
                       builder: (context, ref, child) {
-                        final isFavoriteAsync = ref.watch(isFavoriteProductProvider(product.id));
-                        
+                        final isFavoriteAsync =
+                            ref.watch(isFavoriteProductProvider(product.id));
+
                         return Container(
                           width: 36,
                           height: 36,
@@ -548,7 +663,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             iconSize: 20,
                             icon: isFavoriteAsync.when(
                               data: (isFavorite) => Icon(
-                                isFavorite ? Icons.favorite : Icons.favorite_border,
+                                isFavorite
+                                    ? Icons.favorite
+                                    : Icons.favorite_border,
                                 color: isFavorite ? Colors.red : Colors.grey,
                               ),
                               loading: () => const Icon(
@@ -560,7 +677,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 color: Colors.grey,
                               ),
                             ),
-                            onPressed: () => _toggleFavorite(context, ref, product),
+                            onPressed: () =>
+                                _toggleFavorite(context, ref, product),
                           ),
                         );
                       },
@@ -568,7 +686,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   ),
                 ],
               ),
-              
+
               // Informations du produit
               Expanded(
                 child: Padding(
@@ -588,21 +706,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ),
                       ),
                       const SizedBox(height: 4),
-                      
+
                       // Prix
                       Text(
-                        product.price != null 
+                        product.price != null
                             ? '${displayPrice.toStringAsFixed(2)} €'
                             : 'Prix à négocier',
                         style: TextStyle(
-                          color: product.price != null ? AppColors.primary : Colors.grey[600],
+                          color: product.price != null
+                              ? AppColors.primary
+                              : Colors.grey[600],
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      
+
                       const Spacer(),
-                      
+
                       // Localisation
                       Text(
                         product.city ?? 'Localisation non spécifiée',
@@ -702,18 +822,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-    /// Construit les pastilles de catégories filtrables
+  /// Construit les pastilles de catégories filtrables
   Widget _buildCategoryPills(BuildContext context, WidgetRef ref) {
     final categoriesAsync = ref.watch(categoriesProvider);
-    
+
     return categoriesAsync.when(
       data: (categories) {
-         // Ajouter une catégorie "Tous" en premier
-         final allCategories = [
-           Category(id: 0, name: 'Tous', icon: '🏠'),
-           ...categories,
-         ];
-        
+        // Ajouter une catégorie "Tous" en premier
+        final allCategories = [
+          Category(id: 0, name: 'Tous', icon: '🏠'),
+          ...categories,
+        ];
+
         return Container(
           height: 50,
           child: ListView.builder(
@@ -723,9 +843,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             itemBuilder: (context, index) {
               final category = allCategories[index];
               // Une pastille est sélectionnée seulement si on n'est pas en mode recherche
-              final isSelected = currentSearchQuery == null && 
-                               ((category.id == 0 && selectedCategoryId == null) ||
-                                (category.id != 0 && selectedCategoryId == category.id));
+              final isSelected = currentSearchQuery == null &&
+                  ((category.id == 0 && selectedCategoryId == null) ||
+                      (category.id != 0 && selectedCategoryId == category.id));
               return _buildCategoryPill(context, ref, category, isSelected);
             },
           ),
@@ -737,16 +857,17 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   /// Construit une pastille de catégorie individuelle
-  Widget _buildCategoryPill(BuildContext context, WidgetRef ref, Category category, bool isSelected) {
+  Widget _buildCategoryPill(
+      BuildContext context, WidgetRef ref, Category category, bool isSelected) {
     final Map<String, Color> categoryColors = {
       'Tous': Colors.blue,
       'Poussette': Colors.green,
       'Jeux/Éveil': Colors.orange,
       'Toilette': Colors.purple,
     };
-    
+
     final Color color = categoryColors[category.name] ?? Colors.grey;
-    
+
     return Container(
       margin: const EdgeInsets.only(right: 12),
       child: Material(
@@ -758,7 +879,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               // Effacer la recherche quand on clique sur une catégorie
               currentSearchQuery = null;
               _searchController.clear();
-              
+
               if (category.id == 0) {
                 // Afficher tous les produits (tendances)
                 selectedCategoryId = null;
@@ -773,15 +894,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             decoration: BoxDecoration(
               // Style différent selon l'état sélectionné
-              color: isSelected 
+              color: isSelected
                   ? color.withOpacity(0.3) // Plus opaque si sélectionné
                   : color.withOpacity(0.15),
               borderRadius: BorderRadius.circular(25),
               border: Border.all(
-                color: isSelected 
-                    ? color.withOpacity(0.8) // Bordure plus foncée si sélectionné
+                color: isSelected
+                    ? color
+                        .withOpacity(0.8) // Bordure plus foncée si sélectionné
                     : color.withOpacity(0.3),
-                width: isSelected ? 2.0 : 1.5, // Bordure plus épaisse si sélectionné
+                width: isSelected
+                    ? 2.0
+                    : 1.5, // Bordure plus épaisse si sélectionné
               ),
               boxShadow: [
                 BoxShadow(
@@ -798,7 +922,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 Text(
                   category.icon ?? '📦',
                   style: TextStyle(
-                    fontSize: isSelected ? 18 : 16, // Plus grande si sélectionnée
+                    fontSize:
+                        isSelected ? 18 : 16, // Plus grande si sélectionnée
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -806,7 +931,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 Text(
                   category.name,
                   style: TextStyle(
-                    color: isSelected 
+                    color: isSelected
                         ? color // Couleur plus foncée si sélectionné
                         : color.withOpacity(0.8),
                     fontSize: 14,
@@ -822,7 +947,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   /// Widget d'état d'erreur avec le background qui continue
-  Widget _buildErrorState(BuildContext context, WidgetRef ref, String errorMessage) {
+  Widget _buildErrorState(
+      BuildContext context, WidgetRef ref, String errorMessage) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 60),
       child: Column(
@@ -846,9 +972,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               color: Colors.red,
             ),
           ),
-          
+
           const SizedBox(height: 24),
-          
+
           // Titre
           const Text(
             'Oops !',
@@ -859,9 +985,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
             textAlign: TextAlign.center,
           ),
-          
+
           const SizedBox(height: 12),
-          
+
           // Message d'erreur
           Text(
             'Une erreur s\'est produite lors du chargement.',
@@ -872,9 +998,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
             textAlign: TextAlign.center,
           ),
-          
+
           const SizedBox(height: 32),
-          
+
           // Bouton réessayer
           Container(
             decoration: BoxDecoration(
@@ -894,13 +1020,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 borderRadius: BorderRadius.circular(25),
                 onTap: () {
                   if (selectedCategoryId != null) {
-                    ref.invalidate(categoryProductsProvider(selectedCategoryId!));
+                    ref.invalidate(
+                        categoryProductsProvider(selectedCategoryId!));
                   } else {
                     ref.invalidate(trendingProductsProvider);
                   }
                 },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: const [
@@ -929,20 +1057,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
-  void _toggleFavorite(BuildContext context, WidgetRef ref, Product product) async {
+  void _toggleFavorite(
+      BuildContext context, WidgetRef ref, Product product) async {
     try {
       final favoriteActions = ref.read(favoriteActionsProvider.notifier);
       await favoriteActions.toggleFavorite(product.id);
-      
+
       // Invalider les providers pour rafraîchir l'UI
       ref.invalidate(userFavoritesProvider);
       ref.invalidate(isFavoriteProductProvider(product.id));
-      
+
       // Afficher un message de confirmation
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Produit ${await ref.read(isFavoriteProductProvider(product.id).future) ? "ajouté aux" : "retiré des"} favoris'),
+            content: Text(
+                'Produit ${await ref.read(isFavoriteProductProvider(product.id).future) ? "ajouté aux" : "retiré des"} favoris'),
             duration: const Duration(seconds: 2),
             backgroundColor: AppColors.primary,
           ),
@@ -961,4 +1091,4 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       }
     }
   }
-} 
+}

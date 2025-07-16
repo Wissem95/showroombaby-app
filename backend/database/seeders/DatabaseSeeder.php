@@ -54,8 +54,7 @@ class DatabaseSeeder extends Seeder
 
         foreach ($categories as $categoryData) {
             $category = Category::firstOrCreate(
-                ['name' => $categoryData['name']],
-                ['slug' => Str::slug($categoryData['name'])]
+                ['name' => $categoryData['name']]
             );
 
             // Créer les sous-catégories
@@ -64,7 +63,6 @@ class DatabaseSeeder extends Seeder
                     Category::firstOrCreate(
                         ['name' => $subcategoryData['name']],
                         [
-                            'slug' => Str::slug($subcategoryData['name']),
                             'parent_id' => $category->id
                         ]
                     );
